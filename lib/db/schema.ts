@@ -11,7 +11,9 @@ import {
 
 export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
-  email: varchar("email", { length: 128 }),
+  // Null for guests. Postgres allows repeated NULLs under a unique index, so
+  // this stops two accounts sharing an address without blocking guest rows.
+  email: varchar("email", { length: 128 }).unique(),
   password: varchar("password", { length: 128 }),
   isGuest: boolean("isGuest").notNull().default(true),
   createdAt: timestamp("createdAt").notNull().defaultNow(),

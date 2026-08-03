@@ -20,7 +20,8 @@ CREATE TABLE "User" (
 	"email" varchar(128),
 	"password" varchar(128),
 	"isGuest" boolean DEFAULT true NOT NULL,
-	"createdAt" timestamp DEFAULT now() NOT NULL
+	"createdAt" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "User_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 ALTER TABLE "Chat" ADD CONSTRAINT "Chat_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

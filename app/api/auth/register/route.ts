@@ -42,11 +42,26 @@ export async function POST(request: Request) {
     );
   }
 
-  const updated = await upgradeGuestToAccount({
-    userId: session.userId,
-    email,
-    passwordHash: hashSync(body.password, 10),
-  });
+  let updated: { id: string; email: string | null; isGuest: boolean };
+
+  try {
+    updated = await upgradeGuestToAccount({
+      userId: session.userId,
+      email,
+      passwordHash: hashSync(body.password, 10),
+    });
+  } catch (error) {
+    // Two simultaneous sign-ups for the same address: the unique index on
+    // User.email rejects the loser (Postgres 23505).
+    const code = (error as { code?: string }).code;
+    if (code === "23505") {
+      return NextResponse.json(
+        { error: "taken", message: "An account with that email already exists." },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 
   await setSessionCookie({
     userId: updated.id,
