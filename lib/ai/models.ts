@@ -20,12 +20,21 @@ export const PROVIDER_LABELS: Record<Provider, string> = {
   groq: "Groq",
 };
 
+/**
+ * Every entry here is verified against the live provider APIs by
+ * `npm run check:models` — model availability shifts under you (Google retired
+ * the whole Gemini 2.5 line for new keys, Groq dropped Llama 4 Scout and Kimi
+ * K2), so re-run that script rather than trusting a docs page.
+ *
+ * Gemini Pro and the 2.x line are deliberately absent: they answer 429 on the
+ * free tier, and a model that always errors is worse than one that isn't listed.
+ */
 export const CHAT_MODELS: ChatModel[] = [
   {
-    id: "gemini-2.5-flash",
-    modelId: "gemini-2.5-flash",
+    id: "gemini-3.6-flash",
+    modelId: "gemini-3.6-flash",
     provider: "google",
-    name: "Gemini 2.5 Flash",
+    name: "Gemini 3.6 Flash",
     tagline: {
       tr: "Dengeli varsayılan — görsel + araç desteği",
       en: "Balanced default — vision + tools",
@@ -33,48 +42,36 @@ export const CHAT_MODELS: ChatModel[] = [
     vision: true,
   },
   {
-    id: "gemini-2.5-pro",
-    modelId: "gemini-2.5-pro",
+    id: "gemini-3.5-flash",
+    modelId: "gemini-3.5-flash",
     provider: "google",
-    name: "Gemini 2.5 Pro",
+    name: "Gemini 3.5 Flash",
     tagline: {
-      tr: "En güçlü akıl yürütme, daha yavaş",
-      en: "Strongest reasoning, slower",
+      tr: "Uzun cevaplarda daha ayrıntılı",
+      en: "More thorough on long answers",
     },
     vision: true,
-    reasoning: true,
   },
   {
-    id: "gemini-2.5-flash-lite",
-    modelId: "gemini-2.5-flash-lite",
+    id: "gemini-3.5-flash-lite",
+    modelId: "gemini-3.5-flash-lite",
     provider: "google",
-    name: "Gemini 2.5 Flash Lite",
+    name: "Gemini 3.5 Flash Lite",
     tagline: {
-      tr: "En hızlı ve en ucuz Gemini",
-      en: "Fastest, cheapest Gemini",
+      tr: "En hızlı Gemini — kısa sorular için",
+      en: "Fastest Gemini — for short questions",
     },
     vision: true,
     fast: true,
   },
   {
-    id: "gemini-2.0-flash",
-    modelId: "gemini-2.0-flash",
+    id: "gemini-3.1-flash-lite",
+    modelId: "gemini-3.1-flash-lite",
     provider: "google",
-    name: "Gemini 2.0 Flash",
+    name: "Gemini 3.1 Flash Lite",
     tagline: {
       tr: "Önceki nesil — karşılaştırma için",
       en: "Previous generation — for comparison",
-    },
-    vision: true,
-  },
-  {
-    id: "llama-4-scout",
-    modelId: "meta-llama/llama-4-scout-17b-16e-instruct",
-    provider: "groq",
-    name: "Llama 4 Scout",
-    tagline: {
-      tr: "Meta'nın açık ağırlıklı görsel modeli",
-      en: "Meta's open-weight vision model",
     },
     vision: true,
     fast: true,
@@ -85,20 +82,8 @@ export const CHAT_MODELS: ChatModel[] = [
     provider: "groq",
     name: "Llama 3.3 70B",
     tagline: {
-      tr: "Çok hızlı metin modeli (görsel yok)",
-      en: "Very fast text model (no vision)",
-    },
-    vision: false,
-    fast: true,
-  },
-  {
-    id: "kimi-k2",
-    modelId: "moonshotai/kimi-k2-instruct-0905",
-    provider: "groq",
-    name: "Kimi K2",
-    tagline: {
-      tr: "Araç kullanımında güçlü, 1T parametre",
-      en: "Strong at tool use, 1T parameters",
+      tr: "Meta'nın açık ağırlıklı modeli — çok hızlı",
+      en: "Meta's open-weight model — very fast",
     },
     vision: false,
   },
@@ -114,12 +99,38 @@ export const CHAT_MODELS: ChatModel[] = [
     vision: false,
     reasoning: true,
   },
+  {
+    id: "qwen3.6-27b",
+    modelId: "qwen/qwen3.6-27b",
+    provider: "groq",
+    name: "Qwen 3.6 27B",
+    tagline: {
+      tr: "Alibaba'nın modeli — farklı bir bakış",
+      en: "Alibaba's model — a different take",
+    },
+    vision: false,
+  },
+  {
+    id: "llama-3.1-8b",
+    modelId: "llama-3.1-8b-instant",
+    provider: "groq",
+    name: "Llama 3.1 8B",
+    tagline: {
+      tr: "Anlık cevap — en küçük model",
+      en: "Instant answers — smallest model",
+    },
+    vision: false,
+    fast: true,
+  },
 ];
 
-export const DEFAULT_MODEL_ID = "gemini-2.5-flash";
+export const DEFAULT_MODEL_ID = "gemini-3.6-flash";
 
 /** Cheap model used for auto-titling chats. */
-export const TITLE_MODEL_ID = "gemini-2.5-flash-lite";
+export const TITLE_MODEL_ID = "gemini-3.5-flash-lite";
+
+/** Only Gemini can be handed a YouTube URL and actually watch the video. */
+export const VIDEO_MODEL_ID = "gemini-3.6-flash";
 
 export function isProviderConfigured(provider: Provider): boolean {
   if (provider === "google") {

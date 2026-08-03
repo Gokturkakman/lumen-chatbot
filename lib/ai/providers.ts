@@ -4,7 +4,7 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createGroq } from "@ai-sdk/groq";
 import type { LanguageModel } from "ai";
 
-import { getModelById, TITLE_MODEL_ID } from "./models";
+import { getModelById, TITLE_MODEL_ID, VIDEO_MODEL_ID } from "./models";
 
 const google = createGoogleGenerativeAI({
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -43,5 +43,5 @@ export function getTitleModel(): LanguageModel {
 
 /** Gemini is the only model here that can watch a video file directly. */
 export function getVideoModel(): LanguageModel {
-  return google("gemini-2.5-flash");
+  return getLanguageModel(VIDEO_MODEL_ID);
 }

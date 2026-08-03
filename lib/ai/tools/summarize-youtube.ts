@@ -17,11 +17,17 @@ const summarySchema = z.object({
     .string()
     .describe("Language the video is spoken in, e.g. 'Turkish', 'English'."),
   tldr: z.string().describe("One or two sentences capturing the whole video."),
+  // Deliberately loose lower bounds: a 19-second clip genuinely has one point
+  // and no chapters, and a `.min()` the video can't satisfy makes the model
+  // fail schema validation rather than answer.
   keyPoints: z
     .array(z.string())
-    .min(3)
-    .max(6)
-    .describe("The main substantive points made in the video."),
+    .min(1)
+    .max(8)
+    .describe(
+      "The main substantive points made in the video. Aim for 3-6 on a " +
+        "normal-length video; give fewer if the video is very short."
+    ),
   chapters: z
     .array(
       z.object({
@@ -32,9 +38,11 @@ const summarySchema = z.object({
         detail: z.string().describe("One sentence on what happens here."),
       })
     )
-    .min(2)
-    .max(8)
-    .describe("A timeline of the video's sections, in chronological order."),
+    .max(10)
+    .describe(
+      "A timeline of the video's sections, in chronological order. Return an " +
+        "empty array for clips too short to have sections."
+    ),
   notableQuote: z
     .string()
     .nullable()
@@ -89,7 +97,7 @@ export const summarizeYouTube = tool({
 
     const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-    try {
+    async function watch() {
       const { object } = await generateObject({
         model: getVideoModel(),
         schema: summarySchema,
@@ -110,6 +118,19 @@ export const summarizeYouTube = tool({
           },
         ],
       });
+      return object;
+    }
+
+    try {
+      // Structured output occasionally comes back malformed on the first pass;
+      // one retry is far cheaper than telling the user we couldn't watch a
+      // video we can in fact watch.
+      let object: YouTubeSummary;
+      try {
+        object = await watch();
+      } catch {
+        object = await watch();
+      }
 
       return {
         ...object,
@@ -117,7 +138,18 @@ export const summarizeYouTube = tool({
         videoUrl,
         thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
       };
-    } catch {
+    } catch (error) {
+      const wrapped = error as {
+        message?: string;
+        statusCode?: number;
+        data?: { error?: { message?: string } };
+      };
+      console.error(
+        `[summarizeYouTube] ${videoId} status=${wrapped?.statusCode ?? "-"} ${
+          wrapped?.data?.error?.message ?? wrapped?.message ?? String(error)
+        }`
+      );
+
       return {
         error:
           "Couldn't watch that video. It may be private, age-restricted, " +

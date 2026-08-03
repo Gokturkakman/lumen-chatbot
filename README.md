@@ -16,7 +16,7 @@ geçiş yaparak.
 | --- | --- | --- |
 | Bir yayın kuruluşunun son 5 haberi | ✅ | [`lib/ai/tools/get-news.ts`](lib/ai/tools/get-news.ts) — resmi RSS → Google News → Exa, üç kademeli |
 | Resim girdisi | ✅ | [`components/composer.tsx`](components/composer.tsx) — sürükle-bırak, yapıştır, dosya seç; tarayıcıda 1568px'e küçültülür |
-| Birden fazla model | ✅ | 8 model / 2 sağlayıcı — [`lib/ai/models.ts`](lib/ai/models.ts) |
+| Birden fazla model | ✅ | 8 model / 2 sağlayıcı — [`lib/ai/models.ts`](lib/ai/models.ts), `npm run check:models` ile canlı doğrulanır |
 | Eski mesajlaşmalar | ✅ | Postgres + Drizzle, kenar çubuğunda tarihe göre gruplanmış |
 | Karakter karakter stream | ✅ | `smoothStream({ chunking: /[\s\S]/ })` — [`app/api/chat/route.ts`](app/api/chat/route.ts) |
 | **Bonus:** LinkedIn profili okuma | ✅ | [`lib/ai/tools/get-linkedin-profile.ts`](lib/ai/tools/get-linkedin-profile.ts) |
@@ -56,6 +56,30 @@ npm install && npm run db:push && npm run dev
 ```
 
 `http://localhost:3000` — giriş yapmana gerek yok, misafir olarak hemen başlar.
+
+### 4. Sağlığı doğrula
+
+```bash
+npm run check:models && npm run check:feeds
+```
+
+İlki kataloğdaki 8 modelin hepsini gerçek bir araç çağrısıyla sınar, ikincisi
+43 haber beslemesinin hâlâ ayakta olduğunu kontrol eder. İkisi de sağlayıcılar
+sessizce bir şeyi kaldırdığında bunu üretimde değil burada görmen için var.
+
+---
+
+## Bilinmesi gereken: ücretsiz kota
+
+Gemini'ın ücretsiz katmanı **model başına günde 20 istek** veriyor. Bir modelin
+kotası dolduğunda uygulama bunu açıkça söyleyip başka modele geçmeni öneriyor;
+genel bir hata göstermiyor. Groq'un ücretsiz limitleri çok daha geniş, o yüzden
+Gemini tükendiğinde Groq modelleri güvenli liman.
+
+Gemini Pro modelleri ve 2.x serisi bilerek katalogda yok: Pro ücretsiz katmanda
+kotasız (her istek 429), Gemini 2.5 serisi ise yeni API anahtarlarına tamamen
+kapatılmış (404). Hep hata veren bir model, listede olmayan bir modelden daha
+kötü.
 
 ---
 

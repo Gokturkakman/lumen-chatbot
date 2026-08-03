@@ -40,7 +40,10 @@ export type Chat = typeof chat.$inferSelect;
 export const message = pgTable(
   "Message",
   {
-    id: uuid("id").primaryKey().notNull().defaultRandom(),
+    // Not a uuid: the AI SDK mints these client-side as short opaque ids
+    // (e.g. "Ko5yjldZrUtXDKWd"), and the same id must survive the round trip
+    // so resuming a chat doesn't duplicate messages.
+    id: varchar("id", { length: 64 }).primaryKey().notNull(),
     chatId: uuid("chatId")
       .notNull()
       .references(() => chat.id, { onDelete: "cascade" }),

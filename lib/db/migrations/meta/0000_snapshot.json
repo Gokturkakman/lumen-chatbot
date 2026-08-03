@@ -1,5 +1,5 @@
 {
-  "id": "9d71f746-d8a2-46e0-921e-d1e6cc6187dd",
+  "id": "531c9553-d061-466d-a6dc-0a918870a980",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -92,10 +92,9 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "varchar(64)",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "chatId": {
           "name": "chatId",

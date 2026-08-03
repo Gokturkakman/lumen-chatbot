@@ -185,7 +185,43 @@ export async function POST(request: Request) {
     },
 
     onError: (error) => {
-      console.error("[chat]", error);
+      // Provider failures arrive wrapped; the useful text is buried in
+      // `data.error.message`, and without digging it out the server log just
+      // says "An error occurred."
+      const wrapped = error as {
+        message?: string;
+        data?: { error?: { message?: string } };
+        statusCode?: number;
+      };
+      const detail = wrapped?.data?.error?.message ?? wrapped?.message;
+      console.error(
+        `[chat] model=${modelId} status=${wrapped?.statusCode ?? "-"} ${detail ?? String(error)}`
+      );
+
+      // Gemini's free tier allows only 20 requests per day per model, so
+      // hitting the cap mid-demo is likely. Say so, and point at the fix the
+      // user can actually act on: another model in the picker.
+      const quotaExhausted =
+        wrapped?.statusCode === 429 ||
+        /quota|rate.?limit|RESOURCE_EXHAUSTED/i.test(detail ?? "");
+
+      if (quotaExhausted) {
+        const retryAfter = detail?.match(/retry in ([\d.]+)s/i)?.[1];
+        const wait = retryAfter ? Math.ceil(Number(retryAfter)) : null;
+
+        return locale === "tr"
+          ? `${model.name} için günlük ücretsiz kota doldu.` +
+              (wait ? ` ${wait} saniye sonra tekrar deneyebilirsin.` : "") +
+              " Ya da üstteki menüden başka bir modele geç."
+          : `The free daily quota for ${model.name} is used up.` +
+              (wait ? ` You can retry in ${wait}s.` : "") +
+              " Or switch to another model from the picker above.";
+      }
+
+      if (process.env.NODE_ENV !== "production" && detail) {
+        return detail;
+      }
+
       return locale === "tr"
         ? "Bir şeyler ters gitti. Lütfen tekrar dene."
         : "Something went wrong. Please try again.";

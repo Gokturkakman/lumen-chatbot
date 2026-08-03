@@ -7,7 +7,7 @@ CREATE TABLE "Chat" (
 );
 --> statement-breakpoint
 CREATE TABLE "Message" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"id" varchar(64) PRIMARY KEY NOT NULL,
 	"chatId" uuid NOT NULL,
 	"role" varchar(16) NOT NULL,
 	"parts" json NOT NULL,

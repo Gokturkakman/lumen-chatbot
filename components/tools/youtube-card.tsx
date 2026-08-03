@@ -70,8 +70,9 @@ export function YouTubeCard({ result }: { result: YouTubeResult }) {
         </ul>
       </div>
 
-      {/* Chapter timeline — a real vertical rail with clickable timestamps. */}
-      <div className="px-4 py-3.5">
+      {/* Chapter timeline — a real vertical rail with clickable timestamps.
+          Clips too short to have sections come back with none. */}
+      <div className={result.chapters.length === 0 ? "hidden" : "px-4 py-3.5"}>
         <p className="eyebrow">{t("card.timeline")}</p>
 
         <ol className="relative mt-3 space-y-3.5 pl-4">
