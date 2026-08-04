@@ -72,6 +72,38 @@ function extractName(markdown: string): string | null {
   return titleLine.replace(/\s*\|\s*LinkedIn\s*$/i, "").split(/\s+-\s+/)[0].trim();
 }
 
+/**
+ * Exa's page text opens with the profile header before drifting into
+ * scraped-elsewhere filler:
+ *
+ *   # Satya Nadella
+ *   Chairman and CEO at Microsoft
+ *   Redmond, Washington, United States
+ *
+ * Only that header is reliably the person's own profile, so take the role
+ * line from it and leave the body to Exa's summary.
+ */
+function headlineFromExaText(text: string | null | undefined): string | null {
+  if (!text) return null;
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const headingIndex = lines.findIndex((line) => line.startsWith("#"));
+  if (headingIndex === -1) return null;
+
+  const candidate = lines[headingIndex + 1];
+  if (!candidate || candidate.startsWith("#") || candidate.startsWith("|")) {
+    return null;
+  }
+  // Connection counts and section headers are not job titles.
+  if (/connections?|followers?|^About$/i.test(candidate)) return null;
+
+  return candidate.length > 120 ? null : candidate;
+}
+
 export const getLinkedInProfile = tool({
   description:
     "Look up a person's public LinkedIn profile — their headline, current " +
@@ -119,8 +151,10 @@ export const getLinkedInProfile = tool({
           if (top && (top.summary || top.text)) {
             return {
               name: top.title ?? null,
-              headline: null,
+              headline: headlineFromExaText(top.text),
               url,
+              // Prefer the summary: Exa's raw text tails off into unrelated
+              // encyclopedia content scraped from elsewhere.
               content: top.summary || top.text || "",
               source: "exa",
               alternates: [],
@@ -170,7 +204,8 @@ export const getLinkedInProfile = tool({
 
       return {
         name: extractName(markdown ?? "") ?? top.title ?? input,
-        headline: extractHeadline(markdown ?? ""),
+        headline:
+          extractHeadline(markdown ?? "") ?? headlineFromExaText(top.text),
         url: top.url,
         content: markdown ?? top.summary ?? top.text ?? "",
         source: markdown ? "jina" : "exa",

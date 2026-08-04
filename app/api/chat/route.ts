@@ -38,6 +38,37 @@ const bodySchema = z.object({
   locale: z.enum(["tr", "en"]).default("tr"),
 });
 
+type ApiErrorLike = {
+  message?: string;
+  statusCode?: number;
+  data?: { error?: { message?: string } };
+  cause?: unknown;
+  lastError?: unknown;
+  errors?: unknown[];
+};
+
+/**
+ * The AI SDK wraps provider failures several layers deep — a retry wrapper
+ * whose own message is just "An error occurred." holds the real
+ * AI_APICallError in `lastError`/`errors[]`. Walk the chain and return the
+ * first node that carries a status code or a provider message.
+ */
+function findApiError(error: unknown, depth = 0): ApiErrorLike | null {
+  if (!error || typeof error !== "object" || depth > 4) return null;
+
+  const node = error as ApiErrorLike;
+  if (node.statusCode !== undefined || node.data?.error?.message) {
+    return node;
+  }
+
+  for (const child of [node.lastError, node.cause, ...(node.errors ?? [])]) {
+    const found = findApiError(child, depth + 1);
+    if (found) return found;
+  }
+
+  return null;
+}
+
 function firstText(message: { parts: unknown[] }): string {
   for (const part of message.parts) {
     const candidate = part as { type?: string; text?: string };
@@ -130,6 +161,58 @@ export async function POST(request: Request) {
 
   /* ── Stream ──────────────────────────────────────────────────────── */
 
+  // Both stream layers hand us a sanitised "An error occurred."; only
+  // streamText's own onError carries the provider's real failure, so stash it
+  // and read it back when composing the message the user actually sees.
+  let providerError: unknown = null;
+
+  // Captured here because TypeScript's narrowing of `model` doesn't survive
+  // into a closure that runs later.
+  const modelName = model.name;
+
+  function describeError(error: unknown): string {
+    const apiError = findApiError(providerError) ?? findApiError(error);
+    const detail =
+      apiError?.data?.error?.message ??
+      apiError?.message ??
+      (providerError as { message?: string })?.message ??
+      (error as { message?: string })?.message;
+
+    console.error(
+      `[chat] model=${modelId} status=${apiError?.statusCode ?? "-"} ${
+        detail ?? String(error)
+      }`
+    );
+
+    // Gemini's free tier allows only 20 requests per day per model, so
+    // hitting the cap mid-demo is likely. Say so, and point at the fix the
+    // user can actually act on: another model in the picker.
+    const quotaExhausted =
+      apiError?.statusCode === 429 ||
+      /quota|rate.?limit|RESOURCE_EXHAUSTED/i.test(detail ?? "");
+
+    if (quotaExhausted) {
+      const retryAfter = detail?.match(/retry in ([\d.]+)s/i)?.[1];
+      const wait = retryAfter ? Math.ceil(Number(retryAfter)) : null;
+
+      return locale === "tr"
+        ? `${modelName} için günlük ücretsiz kota doldu.` +
+            (wait ? ` ${wait} saniye sonra tekrar deneyebilirsin.` : "") +
+            " Ya da üstteki menüden başka bir modele geç."
+        : `The free daily quota for ${modelName} is used up.` +
+            (wait ? ` You can retry in ${wait}s.` : "") +
+            " Or switch to another model from the picker above.";
+    }
+
+    if (process.env.NODE_ENV !== "production" && detail) {
+      return detail;
+    }
+
+    return locale === "tr"
+      ? "Bir şeyler ters gitti. Lütfen tekrar dene."
+      : "Something went wrong. Please try again.";
+  }
+
   const stream = createUIMessageStream<LumenMessage>({
     execute: async ({ writer }) => {
       const result = streamText({
@@ -142,6 +225,9 @@ export async function POST(request: Request) {
         messages: await convertToModelMessages(messages),
         tools: chatTools,
         stopWhen: stepCountIs(6),
+        // A 429 here is a daily cap, not a blip — retrying just makes the user
+        // wait ~30s for the same failure before seeing the message.
+        maxRetries: 1,
         // True character-by-character streaming: the regex matches a single
         // character, so smoothStream re-paces the provider's multi-token
         // chunks into one character every 5ms (~200 cps) instead of dumping
@@ -150,6 +236,9 @@ export async function POST(request: Request) {
           delayInMs: 5,
           chunking: /[\s\S]/,
         }),
+        onError: ({ error }) => {
+          providerError = error;
+        },
       });
 
       result.consumeStream();
@@ -161,6 +250,9 @@ export async function POST(request: Request) {
             modelId,
             createdAt: new Date().toISOString(),
           }),
+          // Without this the merged stream emits its own generic error part
+          // before the outer handler ever runs.
+          onError: describeError,
         })
       );
     },
@@ -184,48 +276,7 @@ export async function POST(request: Request) {
       }
     },
 
-    onError: (error) => {
-      // Provider failures arrive wrapped; the useful text is buried in
-      // `data.error.message`, and without digging it out the server log just
-      // says "An error occurred."
-      const wrapped = error as {
-        message?: string;
-        data?: { error?: { message?: string } };
-        statusCode?: number;
-      };
-      const detail = wrapped?.data?.error?.message ?? wrapped?.message;
-      console.error(
-        `[chat] model=${modelId} status=${wrapped?.statusCode ?? "-"} ${detail ?? String(error)}`
-      );
-
-      // Gemini's free tier allows only 20 requests per day per model, so
-      // hitting the cap mid-demo is likely. Say so, and point at the fix the
-      // user can actually act on: another model in the picker.
-      const quotaExhausted =
-        wrapped?.statusCode === 429 ||
-        /quota|rate.?limit|RESOURCE_EXHAUSTED/i.test(detail ?? "");
-
-      if (quotaExhausted) {
-        const retryAfter = detail?.match(/retry in ([\d.]+)s/i)?.[1];
-        const wait = retryAfter ? Math.ceil(Number(retryAfter)) : null;
-
-        return locale === "tr"
-          ? `${model.name} için günlük ücretsiz kota doldu.` +
-              (wait ? ` ${wait} saniye sonra tekrar deneyebilirsin.` : "") +
-              " Ya da üstteki menüden başka bir modele geç."
-          : `The free daily quota for ${model.name} is used up.` +
-              (wait ? ` You can retry in ${wait}s.` : "") +
-              " Or switch to another model from the picker above.";
-      }
-
-      if (process.env.NODE_ENV !== "production" && detail) {
-        return detail;
-      }
-
-      return locale === "tr"
-        ? "Bir şeyler ters gitti. Lütfen tekrar dene."
-        : "Something went wrong. Please try again.";
-    },
+    onError: describeError,
   });
 
   return createUIMessageStreamResponse({ stream });
