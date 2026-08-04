@@ -1,5 +1,8 @@
 # Lumen
 
+**Canlı: https://lumen-chatbot-pi.vercel.app** — giriş gerekmez, misafir olarak
+açılır açılmaz kullanılabilir.
+
 Araştıran bir sohbet asistanı. Haberleri kaynağından çeker, YouTube videolarını
 gerçekten izler, web'i okur, görselleri anlar — sekiz farklı model arasında
 geçiş yaparak.
