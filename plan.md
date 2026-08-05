@@ -117,6 +117,26 @@ sohbete devam ederken mesaj çiftlenmesin.
 
 ---
 
+## 4.5 Mesaj etkileşim satırı
+
+Referans: [Ronas IT — Chatbot Web UI](https://dribbble.com/shots/22026872) (Dribbble).
+Desen alındı, tema alınmadı — koyu/gradient yerine Lumen'in kendi editoryal
+paleti korundu.
+
+Her asistan mesajının altında (hover ile açılan satır, `components/message.tsx`):
+- **Kopyala** — panoya düz metin.
+- **Yeniden oluştur** — sadece son mesajda görünür, `useChat().regenerate()`'i
+  tetikler.
+- **İyi/Kötü yanıt** — yerel state + toast onayı. Kalıcı değil (oy veritabanına
+  yazılmıyor); bilinçli kapsam sınırı, backend endpoint istenmedi.
+- Modele göre etiket (`· Gemini 3.6 Flash`).
+
+Composer altında sabit güven satırı: "Lumen hata yapabilir. Önemli bilgileri
+doğrula." — sohbet endüstrisinin standart feragat kalıbı, referans tasarımda
+da aynı yerde.
+
+---
+
 ## 5. Dağıtım
 
 - **Veritabanı:** Neon Postgres (Frankfurt bölgesi, Türkiye'ye yakın).
