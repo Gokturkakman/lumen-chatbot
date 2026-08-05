@@ -131,3 +131,11 @@ export const ImageIcon = (p: IconProps) => (
 export const BrainIcon = (p: IconProps) => (
   <Icon {...p}><path d="M9.5 4.5A2.5 2.5 0 0 0 7 7a2.5 2.5 0 0 0-1.5 4.5A2.5 2.5 0 0 0 7 16a2.5 2.5 0 0 0 2.5 2.5A1.5 1.5 0 0 0 12 17.5v-11a1.5 1.5 0 0 0-2.5-2Z" /><path d="M14.5 4.5A2.5 2.5 0 0 1 17 7a2.5 2.5 0 0 1 1.5 4.5A2.5 2.5 0 0 1 17 16a2.5 2.5 0 0 1-2.5 2.5A1.5 1.5 0 0 1 12 17.5v-11a1.5 1.5 0 0 1 2.5-2Z" /></Icon>
 );
+
+export const ThumbUpIcon = (p: IconProps) => (
+  <Icon {...p}><path d="M7 11v8H4.5a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1H7Zm0 0 3.5-6.5a1.5 1.5 0 0 1 2.8.9L12.5 9H18a1.6 1.6 0 0 1 1.55 1.96l-1.4 6A1.6 1.6 0 0 1 16.6 18H10a3 3 0 0 1-3-3v-4Z" /></Icon>
+);
+
+export const ThumbDownIcon = (p: IconProps) => (
+  <Icon {...p}><path d="M17 13V5h2.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H17Zm0 0-3.5 6.5a1.5 1.5 0 0 1-2.8-.9l.8-3.6H6a1.6 1.6 0 0 1-1.55-1.96l1.4-6A1.6 1.6 0 0 1 7.4 6H14a3 3 0 0 1 3 3v4Z" /></Icon>
+);

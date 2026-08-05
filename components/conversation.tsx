@@ -63,6 +63,12 @@ export function Conversation({
             isStreaming={
               status === "streaming" && index === messages.length - 1
             }
+            isLast={
+              index === messages.length - 1 &&
+              status !== "streaming" &&
+              status !== "submitted"
+            }
+            onRegenerate={onRetry}
           />
         ))}
 

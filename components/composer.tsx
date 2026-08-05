@@ -328,7 +328,7 @@ export function Composer({
         </div>
 
         <p className="mt-2 text-center text-[11px] text-faint">
-          {t("composer.hint")}
+          {t("composer.hint")} · {t("composer.disclaimer")}
         </p>
       </div>
     </div>

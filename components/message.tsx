@@ -1,8 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 
-import { CheckIcon, ChevronDownIcon, CopyIcon } from "@/components/icons";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  RefreshIcon,
+  ThumbDownIcon,
+  ThumbUpIcon,
+} from "@/components/icons";
 import { Markdown } from "@/components/markdown";
 import { ToolPart, type ToolPartType } from "@/components/tools/tool-part";
 import type { ChatModel } from "@/lib/ai/models";
@@ -20,10 +28,14 @@ export function Message({
   message,
   models,
   isStreaming,
+  isLast,
+  onRegenerate,
 }: {
   message: LumenMessage;
   models: ChatModel[];
   isStreaming: boolean;
+  isLast: boolean;
+  onRegenerate: () => void;
 }) {
   return message.role === "user" ? (
     <UserMessage message={message} />
@@ -32,6 +44,8 @@ export function Message({
       message={message}
       models={models}
       isStreaming={isStreaming}
+      isLast={isLast}
+      onRegenerate={onRegenerate}
     />
   );
 }
@@ -82,13 +96,18 @@ function AssistantMessage({
   message,
   models,
   isStreaming,
+  isLast,
+  onRegenerate,
 }: {
   message: LumenMessage;
   models: ChatModel[];
   isStreaming: boolean;
+  isLast: boolean;
+  onRegenerate: () => void;
 }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
+  const [vote, setVote] = useState<"up" | "down" | null>(null);
 
   const plainText = message.parts
     .filter((part) => part.type === "text")
@@ -103,6 +122,13 @@ function AssistantMessage({
     void navigator.clipboard.writeText(plainText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1600);
+  }
+
+  // Local-only signal — no vote endpoint exists yet, so this just closes the
+  // loop for the user rather than silently discarding their input.
+  function react(next: "up" | "down") {
+    setVote((current) => (current === next ? null : next));
+    if (vote !== next) toast.success(t("message.feedbackThanks"));
   }
 
   // The caret belongs on the final text part only, and only while it grows.
@@ -162,6 +188,46 @@ function AssistantMessage({
                 {t("message.copy")}
               </>
             )}
+          </button>
+
+          {isLast && (
+            <button
+              type="button"
+              onClick={onRegenerate}
+              className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-[11.5px] font-medium text-faint transition-colors hover:bg-sunken hover:text-ink"
+            >
+              <RefreshIcon size={12} />
+              {t("message.regenerate")}
+            </button>
+          )}
+
+          <span className="mx-0.5 h-3.5 w-px bg-rule" />
+
+          <button
+            type="button"
+            aria-pressed={vote === "up"}
+            aria-label={t("message.helpful")}
+            title={t("message.helpful")}
+            onClick={() => react("up")}
+            className={cn(
+              "grid h-7 w-7 place-items-center rounded-lg transition-colors hover:bg-sunken",
+              vote === "up" ? "text-positive" : "text-faint hover:text-ink"
+            )}
+          >
+            <ThumbUpIcon size={13} />
+          </button>
+          <button
+            type="button"
+            aria-pressed={vote === "down"}
+            aria-label={t("message.unhelpful")}
+            title={t("message.unhelpful")}
+            onClick={() => react("down")}
+            className={cn(
+              "grid h-7 w-7 place-items-center rounded-lg transition-colors hover:bg-sunken",
+              vote === "down" ? "text-negative" : "text-faint hover:text-ink"
+            )}
+          >
+            <ThumbDownIcon size={13} />
           </button>
 
           {modelName && (
